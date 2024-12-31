@@ -1,6 +1,9 @@
 import TerserPlugin from "terser-webpack-plugin";
-import { Configuration, BannerPlugin } from "webpack";
+import { Configuration, BannerPlugin, IgnorePlugin } from "webpack";
 import { generateHeader } from "../plugins/userscript.plugin";
+import path from 'node:path';
+
+const ReplaceInFileWebpackPlugin = require('replace-in-file-webpack-plugin');
 
 const config: Configuration = {
     entry: "./src/index.ts",
@@ -15,11 +18,11 @@ const config: Configuration = {
                 use: "ts-loader",
                 exclude: /node_modules/,
             },
+            {
+                resourceQuery: /raw/,
+                type: 'asset/source',
+            }
         ],
-    },
-    externals: {
-        axios: "axios",
-        "@trim21/gm-fetch": "GM_fetch",
     },
     optimization: {
         minimize: false,
@@ -39,8 +42,21 @@ const config: Configuration = {
         new BannerPlugin({
             banner: generateHeader,
             raw: true,
-        })
-    ]
+        }),
+        new IgnorePlugin({
+            resourceRegExp: /leaflet/
+        }),
+        new ReplaceInFileWebpackPlugin([{
+            dir: path.resolve(".", "userscripts"),
+            test: /\.js/,
+            rules: [{
+                search: /^const L = .*$/igm,
+                //search: /.*./g,
+                replace: ''
+            }]
+        }]),
+    ],
+    cache: false
 };
 
 export default config;
